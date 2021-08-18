@@ -62,6 +62,11 @@ void SysProvEvent(system_event_t *sys_event, wifi_prov_event_t *prov_event)
 void setup()
 {
   Serial.begin(115200);
+
+  // uncomment these two lines to erase WiFi credentials on every reset.
+  // WiFi.enableSTA(true);
+  // WiFi.disconnect(true, true);
+
   Serial.println("Start provisioning!");
   //Sample uuid that user can pass during provisioning using BLE
   /* uint8_t uuid[16] = {0xb4, 0xdf, 0x5a, 0x1c, 0x3f, 0x6b, 0xf4, 0xbf,
