@@ -52,6 +52,7 @@ void SysProvEvent(system_event_t *sys_event, wifi_prov_event_t *prov_event)
       break;
     case WIFI_PROV_END:
       Serial.println("\nProvisioning Ends");
+      wifi_prov_mgr_deinit();
       break;
     default:
       break;
