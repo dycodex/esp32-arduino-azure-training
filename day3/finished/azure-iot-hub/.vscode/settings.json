@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "agenttypesystem.h": "c",
+        "tlsio_mbedtls.h": "c"
+    }
+}
