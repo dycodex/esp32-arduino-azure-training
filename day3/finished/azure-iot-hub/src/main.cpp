@@ -14,6 +14,12 @@
 #include "iothubtransportmqtt.h"
 #endif
 
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_SHTC3.h>
+
+Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
+
 static const char ssid[] = IOT_CONFIG_WIFI_SSID;
 static const char pass[] = IOT_CONFIG_WIFI_PASSWORD;
 
@@ -26,7 +32,7 @@ static bool g_run_demo = true;
 IOTHUB_MESSAGE_HANDLE message_handle;
 size_t messages_sent = 0;
 #define MESSAGE_COUNT 5 // determines the number of times the device tries to send a message to the IoT Hub in the cloud.
-const char *telemetry_msg = "test_message";
+const char *telemetry_msg = "{}";
 const char *quit_msg = "quit";
 const char *exit_msg = "exit";
 
@@ -88,6 +94,8 @@ static void reset_esp_helper()
  * Runs active task of sending telemetry to IoTHub
  * WARNING: only call this function once, as it includes steps to destroy handles and clean up at the end.
  */
+
+
 static void run_demo()
 {
     // action phase of the program, sending messages to the IoT Hub in the cloud.
@@ -95,18 +103,14 @@ static void run_demo()
     {
         if (messages_sent < MESSAGE_COUNT)
         {
+            sensors_event_t humidity, temp;
+  
+            shtc3.getEvent(&humidity, &temp);// populate temp and humidity objects with fresh data
+            char message_content[64];
+            sprintf(message_content, "{\"temp\":%f, \"hum\": %f}", temp.temperature, humidity.relative_humidity);
             // Construct the iothub message from a string or a byte array
-            message_handle = IoTHubMessage_CreateFromString(telemetry_msg);
+            message_handle = IoTHubMessage_CreateFromString(message_content);
             //message_handle = IoTHubMessage_CreateFromByteArray((const unsigned char*)msgText, strlen(msgText)));
-
-            // Set Message property
-            /*(void)IoTHubMessage_SetMessageId(message_handle, "MSG_ID");
-            (void)IoTHubMessage_SetCorrelationId(message_handle, "CORE_ID");
-            (void)IoTHubMessage_SetContentTypeSystemProperty(message_handle, "application%2fjson");
-            (void)IoTHubMessage_SetContentEncodingSystemProperty(message_handle, "utf-8");*/
-
-            // Add custom properties to message
-            // (void)IoTHubMessage_SetProperty(message_handle, "property_key", "property_value");
 
             LogInfo("Sending message %d to IoTHub\r\n", (int)(messages_sent + 1));
             IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle, send_confirm_callback, NULL);
@@ -138,15 +142,9 @@ static void run_demo()
 
 void setup()
 {
-    Serial.begin(115200);
-
-    // Select the Protocol to use with the connection
-#ifdef SAMPLE_MQTT
     IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol = MQTT_Protocol;
-#endif // SAMPLE_MQTT
-#ifdef SAMPLE_HTTP
-    IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol = HTTP_Protocol;
-#endif // SAMPLE_HTTP
+
+    shtc3.begin();
 
     sample_init(ssid, pass);
 
