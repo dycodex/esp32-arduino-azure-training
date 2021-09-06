@@ -86,6 +86,62 @@ static void reported_state_callback(int status_code, void *user_context)
     LogInfo("Device twin reported properties updated with result: %d\r\n", status_code);
 }
 
+/* -- c2d_message_callback --
+ * This callback function will be called when device has updated it's reported state
+ */
+static IOTHUBMESSAGE_DISPOSITION_RESULT c2d_message_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
+{
+    const char *buffer;
+    size_t size;
+    MAP_HANDLE mapProperties;
+    const char *messageId;
+    const char *correlationId;
+
+    // Message properties
+    if ((messageId = IoTHubMessage_GetMessageId(message)) == NULL)
+    {
+        messageId = "<null>";
+    }
+
+    if ((correlationId = IoTHubMessage_GetCorrelationId(message)) == NULL)
+    {
+        correlationId = "<null>";
+    }
+
+    if (IoTHubMessage_GetByteArray(message, (const unsigned char **)&buffer, &size) != IOTHUB_MESSAGE_OK)
+    {
+        LogInfo("Unable to retrieve the message data\r\n");
+    }
+    else
+    {
+        LogInfo("Received message:\r\nMessage ID: %s\r\nCorrelation ID: %s\r\nData: <<<%.*s>>> & Size=%d\r\n", messageId, correlationId, (int)size, buffer, (int)size);
+    }
+
+    mapProperties = IoTHubMessage_Properties(message);
+    if (mapProperties != NULL)
+    {
+        const char *const *keys;
+        const char *const *values;
+        size_t propertyCount = 0;
+        if (Map_GetInternals(mapProperties, &keys, &values, &propertyCount) == MAP_OK)
+        {
+            if (propertyCount > 0)
+            {
+                size_t index;
+
+                printf(" Message Properties:\r\n");
+                for (index = 0; index < propertyCount; index++)
+                {
+                    printf("\tKey: %s Value: %s\r\n", keys[index], values[index]);
+                }
+                printf("\r\n");
+            }
+        }
+    }
+
+    return IOTHUBMESSAGE_ACCEPTED;
+}
+
 /* -- send_confirm_callback --
  * Callback method which executes upon confirmation that a message originating from this device has been received by the IoT Hub in the cloud.
  */
@@ -239,6 +295,9 @@ void setup()
         // Setting connection status callback to get indication of connection to iothub
         (void)IoTHubDeviceClient_LL_SetConnectionStatusCallback(device_ll_handle, connection_status_callback, NULL);
 
+        // Setting cloud-to-device messages callback
+        (void)IoTHubDeviceClient_LL_SetMessageCallback(device_ll_handle, c2d_message_callback, NULL);
+
         // Set device twin status callback
         (void)IoTHubDeviceClient_LL_SetDeviceTwinCallback(device_ll_handle, device_twin_callback, twin);
 
@@ -249,7 +308,7 @@ void setup()
             my_device_twin_save(twin);
 
             char *reported_props = my_device_twin_serialize_reported_props(twin);
-            IoTHubDeviceClient_LL_SendReportedState(device_ll_handle, (const uint8_t*)reported_props, strlen(reported_props), reported_state_callback, NULL);
+            IoTHubDeviceClient_LL_SendReportedState(device_ll_handle, (const uint8_t *)reported_props, strlen(reported_props), reported_state_callback, NULL);
         }
     }
 }
