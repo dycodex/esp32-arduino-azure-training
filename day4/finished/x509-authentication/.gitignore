@@ -1,0 +1,8 @@
+.pio
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/settings.json
+certs/*.key
+certs/*.srl
+certs/*.pem
+certs/*.csr
