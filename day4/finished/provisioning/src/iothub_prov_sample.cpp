@@ -119,11 +119,6 @@ static void register_device_callback(PROV_DEVICE_RESULT register_result, const c
     }
 }
 
-const IO_INTERFACE_DESCRIPTION *socketio_get_interface_description(void)
-{
-    return NULL;
-}
-
 int iothub_prov_sample_run(void)
 {
     shtc3.begin();
